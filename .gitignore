@@ -1,0 +1,14 @@
+### Backend ###
+target/
+
+### Frontend ###
+node_modules/
+dist/
+
+### Environment ###
+.env
+.env.*
+!.env.example
+
+### IDE ###
+.idea/

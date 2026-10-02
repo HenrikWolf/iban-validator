@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: IBAN Validator API
+  description: Validates International Bank Account Numbers (IBAN) according to ISO 13616.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+tags:
+  - name: Iban
+    description: IBAN validation
+paths:
+  /iban/validation:
+    post:
+      tags:
+        - Iban
+      operationId: validateIban
+      summary: Validate an IBAN
+      description: |
+        Validates the given IBAN (country code, country specific length and mod-97 check digits).
+        Spaces are ignored and letters are treated case-insensitively.
+        An invalid IBAN is not an error: the response is `200` with `valid = false` and a `failureReason`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IbanValidationRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IbanValidationResponse'
+        '400':
+          description: Malformed request (e.g. missing or empty `iban`)
+components:
+  schemas:
+    IbanValidationRequest:
+      type: object
+      required:
+        - iban
+      properties:
+        iban:
+          type: string
+          minLength: 1
+          maxLength: 64
+          example: DE89 3704 0044 0532 0130 00
+    IbanValidationResponse:
+      type: object
+      required:
+        - iban
+        - valid
+      properties:
+        iban:
+          type: string
+          description: Normalized IBAN (spaces removed, upper case)
+          example: DE89370400440532013000
+        valid:
+          type: boolean
+          example: true
+        countryCode:
+          type: string
+          description: ISO 3166-1 alpha-2 country code, if the IBAN is valid
+          example: DE
+        failureReason:
+          $ref: '#/components/schemas/IbanFailureReason'
+    IbanFailureReason:
+      type: string
+      description: Reason why the IBAN is invalid. Absent if the IBAN is valid.
+      enum:
+        - INVALID_CHARACTERS
+        - UNSUPPORTED_COUNTRY
+        - INVALID_LENGTH
+        - INVALID_CHECKSUM
