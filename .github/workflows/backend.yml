@@ -1,20 +1,15 @@
 name: Backend
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - 'api/**'
-      - '.github/workflows/backend.yml'
-  pull_request:
-    paths:
-      - 'backend/**'
-      - 'api/**'
-      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+env:
+  IMAGE: registry.digitalocean.com/iban-validator-registry/iban-validator-backend
+  CLUSTER: k8s-1-36-3-do-5-fra1-1790953586443
+  NAMESPACE: iban-validator
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,3 +27,25 @@ jobs:
 
       - name: Build and test
         run: ./mvnw --batch-mode --no-transfer-progress verify
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Build and push image
+        run: |
+          doctl registry login --expiry-seconds 600
+          docker build -t "$IMAGE:$GITHUB_SHA" .
+          docker push "$IMAGE:$GITHUB_SHA"
+
+      - name: Configure kubectl
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 "$CLUSTER"
+
+      - name: Deploy
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          doctl registry kubernetes-manifest --namespace "$NAMESPACE" | kubectl apply -f -
+          sed -i "s|$IMAGE:latest|$IMAGE:$GITHUB_SHA|" k8s/deployment.yaml
+          kubectl apply -f k8s/
+          kubectl -n "$NAMESPACE" rollout status deployment/iban-validator-backend --timeout=180s

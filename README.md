@@ -37,3 +37,30 @@ An invalid IBAN returns `200` with `valid: false` and a `failureReason`
 A missing or empty `iban` returns `400`.
 
 Change the contract in `api/iban-validator.yaml`; the Maven build regenerates the code.
+
+## Deployment
+
+The backend runs on DigitalOcean Kubernetes (namespace `iban-validator`).
+Deploy manually via GitHub: *Actions* > *Backend* > *Run workflow*.
+The workflow (manual only) builds and tests the backend, pushes the image
+`registry.digitalocean.com/iban-validator-registry/iban-validator-backend:<commit-sha>`
+and applies the manifests in `backend/k8s/`.
+
+The internal service `iban-validator-backend` (ClusterIP) is always available. Until the frontend exists,
+`backend/k8s/service-public.yaml` additionally exposes the backend through a DigitalOcean Load Balancer
+(HTTP only, no authentication, billed separately). Get its address with:
+
+```powershell
+kubectl -n iban-validator get service iban-validator-backend-public
+```
+
+Call `http://<EXTERNAL-IP>/api/v1/iban/validation` (it can take a few minutes until the IP is assigned).
+
+Without the load balancer, test through a tunnel instead:
+
+```powershell
+doctl kubernetes cluster kubeconfig save k8s-1-36-3-do-5-fra1-1790953586443
+kubectl -n iban-validator port-forward service/iban-validator-backend 8080:80
+```
+
+Then call `http://localhost:8080/api/v1/iban/validation`.

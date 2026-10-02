@@ -1,0 +1,18 @@
+# Temporary: exposes the backend publicly (HTTP, no authentication) until the frontend exists.
+# Delete this file and `kubectl -n iban-validator delete service iban-validator-backend-public`
+# once the frontend (or an ingress) is the public entry point.
+apiVersion: v1
+kind: Service
+metadata:
+  name: iban-validator-backend-public
+  namespace: iban-validator
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-name: iban-validator
+spec:
+  type: LoadBalancer
+  selector:
+    app: iban-validator-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
