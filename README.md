@@ -1,6 +1,6 @@
 # IBAN Validator
 
-Monorepo for an IBAN validation service and its (planned) web frontend.
+Monorepo for an IBAN validation service and its web frontend.
 
 ## Structure
 
@@ -8,7 +8,7 @@ Monorepo for an IBAN validation service and its (planned) web frontend.
 |------|-------------|
 | `api/iban-validator.yaml` | OpenAPI spec, single source of truth for the REST contract |
 | `backend/` | Spring Boot 4 (Java 21, Maven). Server interface and DTOs are generated from the spec |
-| `frontend/` | React app (planned) |
+| `frontend/` | React 19 + TypeScript, built with Vite (template only, no features yet) |
 
 ## Backend
 
@@ -18,6 +18,17 @@ Requires JDK 21.
 cd backend
 .\mvnw.cmd test            # build and run tests
 .\mvnw.cmd spring-boot:run # start on http://localhost:8080
+```
+
+## Frontend
+
+Requires Node.js (LTS).
+
+```powershell
+cd frontend
+npm install     # install dependencies
+npm run dev     # start dev server on http://localhost:5173
+npm run build   # type-check and build to dist/
 ```
 
 ### API
