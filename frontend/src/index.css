@@ -11,8 +11,9 @@ body {
 .page {
   min-height: 100svh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 35vh;
 }
 
 .iban-form {
@@ -44,6 +45,7 @@ body {
   background: #1f2937;
   color: #fff;
   cursor: pointer;
+  min-width: 8rem;
 }
 
 .iban-form button:disabled {
@@ -53,11 +55,18 @@ body {
 
 .consent {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 10px;
+  align-items: center;
   max-width: 36rem;
   margin-top: 12px;
   font-size: 14px;
+}
+
+.consent input {
+  flex-shrink: 0;
+  transform: scale(1.5);
+  transform-origin: center;
+  accent-color: #1f2937;
 }
 
 .visually-hidden {

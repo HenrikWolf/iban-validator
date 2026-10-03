@@ -14,6 +14,7 @@ function App() {
   const [iban, setIban] = useState('')
   const [validator, setValidator] = useState<ValidatorType>('INTERNAL')
   const [consent, setConsent] = useState(false)
+  const [storageConsent, setStorageConsent] = useState(false)
   const [result, setResult] = useState<ValidationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -65,7 +66,6 @@ function App() {
           <input
             id="iban"
             type="text"
-            placeholder="DE89 3704 0044 0532 0130 00"
             autoComplete="off"
             spellCheck={false}
             value={iban}
@@ -88,11 +88,20 @@ function App() {
           <button
             type="button"
             onClick={validate}
-            disabled={loading || (needsConsent && !consent)}
+            disabled={loading || !storageConsent || (needsConsent && !consent)}
           >
             {loading ? 'Validating…' : 'Validate'}
           </button>
         </div>
+        <label className="consent">
+          <input
+            type="checkbox"
+            checked={storageConsent}
+            onChange={(event) => setStorageConsent(event.target.checked)}
+          />
+          Ich willige ein, dass meine IBAN zu Testzwecken kurzzeitig
+          gespeichert wird.
+        </label>
         {needsConsent && (
           <label className="consent">
             <input
