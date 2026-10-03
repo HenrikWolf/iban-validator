@@ -116,15 +116,18 @@ function App() {
         )}
         {result && (
           <p className={result.valid ? 'result valid' : 'result invalid'}>
-            {result.valid
-              ? result.countryName
-                ? `Valid – ${result.countryName} (${result.countryCode})`
-                : `Valid (${result.countryCode})`
-              : result.failureMessage}
+            {result.valid ? 'Valid IBAN' : result.failureMessage}
           </p>
         )}
-        {result?.valid && (result.bankName || result.bic || result.bankCode) && (
+        {result?.valid && (result.countryCode || result.bankName || result.bic || result.bankCode) && (
           <div className="bank-details">
+            {result.countryCode && (
+              <p>
+                {result.countryName
+                  ? `${result.countryName} (${result.countryCode})`
+                  : result.countryCode}
+              </p>
+            )}
             {result.bankName && <p>{result.bankName}</p>}
             {result.bic && <p>BIC: {result.bic}</p>}
             {result.bankCode && <p>BLZ: {result.bankCode}</p>}

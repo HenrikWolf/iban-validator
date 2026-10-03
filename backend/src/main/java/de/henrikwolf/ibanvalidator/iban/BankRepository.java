@@ -20,12 +20,13 @@ public class BankRepository {
         return bank.bankCode() != null ? saveGermanBank(bank) : saveForeignBank(bank);
     }
 
-    /** Makes sure the German bank code is known (without further data) and returns the id of its entry. */
-    public long saveBankCode(String bankCode) {
-        return jdbcClient.sql("INSERT INTO bank (bank_code) VALUES (:bankCode) "
+    /** Makes sure the German bank code is known (with its country) and returns the id of its entry. */
+    public long saveBankCode(String bankCode, String countryName) {
+        return jdbcClient.sql("INSERT INTO bank (bank_code, country_name) VALUES (:bankCode, :countryName) "
                         + "ON CONFLICT (bank_code) WHERE bank_code IS NOT NULL "
-                        + "DO UPDATE SET bank_code = EXCLUDED.bank_code RETURNING id")
+                        + "DO UPDATE SET country_name = COALESCE(bank.country_name, EXCLUDED.country_name) RETURNING id")
                 .param("bankCode", bankCode)
+                .param("countryName", countryName)
                 .query(Long.class)
                 .single();
     }

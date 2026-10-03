@@ -84,7 +84,8 @@ public class IbanController implements IbanApi {
             }
             String bankCode = germanBankCode(result);
             boolean linked = ibanRepository.findBank(result.iban()).isPresent();
-            Long bankId = bankCode != null && !linked ? bankRepository.saveBankCode(bankCode) : null;
+            Long bankId = bankCode != null && !linked
+                    ? bankRepository.saveBankCode(bankCode, result.countryName()) : null;
             ibanRepository.saveIfAbsent(result.iban(), bankId);
             return ibanRepository.findBank(result.iban()).orElse(null);
         } catch (DataAccessException e) {

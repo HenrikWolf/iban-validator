@@ -49,7 +49,7 @@ class IbanControllerTest {
 
     @Test
     void usesInternalValidatorByDefaultWithNormalizedIban() throws Exception {
-        when(bankRepository.saveBankCode("37040044")).thenReturn(3L);
+        when(bankRepository.saveBankCode("37040044", "Germany")).thenReturn(3L);
 
         post("""
                 {"iban": "de89 3704-0044.0532 0130 00"}
@@ -75,7 +75,7 @@ class IbanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true));
 
-        verify(bankRepository, never()).saveBankCode(anyString());
+        verify(bankRepository, never()).saveBankCode(anyString(), any());
         verify(ibanRepository).saveIfAbsent("GB82WEST12345698765432", null);
     }
 
@@ -112,7 +112,7 @@ class IbanControllerTest {
 
         verify(ibanApiValidator).validate(IBAN);
         verify(ibanApiExtendedValidator, never()).validate(anyString());
-        verify(bankRepository).saveBankCode("37040044");
+        verify(bankRepository).saveBankCode("37040044", "Germany");
     }
 
     @Test
@@ -126,7 +126,7 @@ class IbanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true));
 
-        verify(bankRepository, never()).saveBankCode(anyString());
+        verify(bankRepository, never()).saveBankCode(anyString(), any());
         verify(ibanRepository).saveIfAbsent(shortIban, null);
     }
 
@@ -200,13 +200,13 @@ class IbanControllerTest {
         }
 
         verify(bankRepository, never()).save(any());
-        verify(bankRepository, never()).saveBankCode(anyString());
+        verify(bankRepository, never()).saveBankCode(anyString(), any());
         verify(ibanRepository, times(2)).saveIfAbsent(IBAN, null);
     }
 
     @Test
     void linksGermanBankCodeAndReturnsItsBankData() throws Exception {
-        when(bankRepository.saveBankCode("37040044")).thenReturn(3L);
+        when(bankRepository.saveBankCode("37040044", "Germany")).thenReturn(3L);
         when(ibanRepository.findBank(IBAN)).thenReturn(Optional.empty(),
                 Optional.of(new Bank("COBADEFFXXX", "Commerzbank", "Germany", "37040044")));
 
@@ -248,13 +248,13 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.bic").value("NWBKGB2LXXX"));
 
         verify(bankRepository).save(new Bank("NWBKGB2LXXX", "NatWest", "United Kingdom", null));
-        verify(bankRepository, never()).saveBankCode(anyString());
+        verify(bankRepository, never()).saveBankCode(anyString(), any());
         verify(ibanRepository).saveIfAbsent(foreignIban, 9L);
     }
 
     @Test
     void seedsGermanBankCodeWhenExtendedValidatorReturnsNoBankData() throws Exception {
-        when(bankRepository.saveBankCode("37040044")).thenReturn(3L);
+        when(bankRepository.saveBankCode("37040044", "Germany")).thenReturn(3L);
         when(ibanApiExtendedValidator.validate(IBAN)).thenReturn(IbanValidationResult.valid(IBAN, "DE"));
 
         post("""
@@ -264,7 +264,7 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.valid").value(true));
 
         verify(bankRepository, never()).save(any());
-        verify(bankRepository).saveBankCode("37040044");
+        verify(bankRepository).saveBankCode("37040044", "Germany");
         verify(ibanRepository).saveIfAbsent(IBAN, 3L);
     }
 
