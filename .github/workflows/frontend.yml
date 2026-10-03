@@ -50,4 +50,6 @@ jobs:
           doctl registry kubernetes-manifest --namespace "$NAMESPACE" | kubectl apply -f -
           sed -i "s|$IMAGE:latest|$IMAGE:$GITHUB_SHA|" k8s/deployment.yaml
           kubectl apply -f k8s/
+          # Old public entry point, replaced by the Traefik ingress. Remove this line once it is gone.
+          kubectl -n "$NAMESPACE" delete service iban-validator-backend-public --ignore-not-found
           kubectl -n "$NAMESPACE" rollout status deployment/iban-validator-frontend --timeout=180s

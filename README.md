@@ -59,20 +59,29 @@ manually via GitHub: *Actions* > *Backend* / *Frontend* > *Run workflow*.
 | *Backend* | builds and tests, pushes the image, deploys | `registry.digitalocean.com/iban-validator-registry/iban-validator-backend:<commit-sha>` | `backend/k8s/` |
 | *Frontend* | builds, pushes the image (nginx), deploys | `registry.digitalocean.com/iban-validator-registry/iban-validator-frontend:<commit-sha>` | `frontend/k8s/` |
 
-Run *Backend* first: it creates the namespace and the image pull secret the frontend relies on, and the frontend needs the
-backend service.
+Run *Backend* first: it creates the namespace and the image pull secret the frontend relies on.
 
-The backend service `iban-validator-backend` is only reachable inside the cluster. The only public entry point is the
-frontend, exposed through a DigitalOcean Load Balancer (`frontend/k8s/service-public.yaml`, HTTP only, billed separately).
-Its nginx serves the React app and forwards `/api/` to the backend, so the browser talks to a single address.
-Get the address with:
+### Public access
+
+The app is available at **https://iban-validator.henrikwolf.de** (DNS A record at Goneo points to the load balancer).
+
+Traefik and cert-manager are installed as DigitalOcean 1-Click Apps (namespaces `traefik` and `cert-manager`). Traefik
+owns the only DigitalOcean Load Balancer (billed separately). The *Frontend* workflow applies the routing:
+
+- `frontend/k8s/ingress.yaml`: HTTPS for `iban-validator.henrikwolf.de`, `/api` goes to the backend, everything else to
+  the frontend (nginx only serves the React app). Plain HTTP is redirected to HTTPS.
+- `frontend/k8s/clusterissuer.yaml`: Let's Encrypt issuer `letsencrypt-prod`. cert-manager
+  requests and renews the certificate (secret `iban-validator-tls`) automatically.
+
+The API is available at `https://iban-validator.henrikwolf.de/api/v1/iban/validation`; other backend paths such as
+`/actuator` are not exposed. In local development, Vite proxies `/api` to this address.
+
+Useful commands:
 
 ```powershell
-kubectl -n iban-validator get service iban-validator-backend-public
+kubectl -n traefik get service                 # external IP of the load balancer
+kubectl -n iban-validator get certificate      # READY should be True
 ```
-
-Open `http://<EXTERNAL-IP>/` (it can take a few minutes until the IP is assigned). The API is available at
-`http://<EXTERNAL-IP>/api/v1/iban/validation`.
 
 To reach the backend directly, use a tunnel:
 

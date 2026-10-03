@@ -6,7 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://67.207.78.10',
+      '/api': {
+        target: 'https://iban-validator.henrikwolf.de',
+        changeOrigin: true,
+      },
     },
   },
 })
