@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: iban-validator-frontend
+  namespace: iban-validator
+spec:
+  type: ClusterIP
+  selector:
+    app: iban-validator-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

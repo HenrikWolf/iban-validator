@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iban-validator-frontend
+  namespace: iban-validator
+  labels:
+    app: iban-validator-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iban-validator-frontend
+  template:
+    metadata:
+      labels:
+        app: iban-validator-frontend
+    spec:
+      imagePullSecrets:
+        - name: registry-iban-validator-registry
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: frontend
+          # The deploy workflow replaces the tag with the commit SHA.
+          image: registry.digitalocean.com/iban-validator-registry/iban-validator-frontend:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
