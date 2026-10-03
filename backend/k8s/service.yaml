@@ -4,7 +4,6 @@ metadata:
   name: iban-validator-backend
   namespace: iban-validator
 spec:
-  type: ClusterIP
   selector:
     app: iban-validator-backend
   ports:

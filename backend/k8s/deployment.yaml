@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: iban-validator-backend
   namespace: iban-validator
-  labels:
-    app: iban-validator-backend
 spec:
   replicas: 1
   selector:

@@ -59,7 +59,7 @@ manually via GitHub: *Actions* > *Backend* / *Frontend* > *Run workflow*.
 | *Backend* | builds and tests, pushes the image, deploys | `registry.digitalocean.com/iban-validator-registry/iban-validator-backend:<commit-sha>` | `backend/k8s/` |
 | *Frontend* | builds, pushes the image (nginx), deploys | `registry.digitalocean.com/iban-validator-registry/iban-validator-frontend:<commit-sha>` | `frontend/k8s/` |
 
-Run *Backend* first: it creates the namespace and the image pull secret the frontend relies on.
+Both workflows create the namespace and the image pull secret if needed, so they can run independently in any order.
 
 ### Public access
 

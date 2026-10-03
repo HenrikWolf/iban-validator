@@ -44,7 +44,7 @@ jobs:
 
       - name: Deploy
         run: |
-          kubectl apply -f k8s/namespace.yaml
+          kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
           doctl registry kubernetes-manifest --namespace "$NAMESPACE" | kubectl apply -f -
           sed -i "s|$IMAGE:latest|$IMAGE:$GITHUB_SHA|" k8s/deployment.yaml
           kubectl apply -f k8s/
