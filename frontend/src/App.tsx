@@ -7,12 +7,20 @@ type ValidationResult = components['schemas']['IbanValidationResponse']
 function App() {
   const [iban, setIban] = useState('')
   const [result, setResult] = useState<ValidationResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   async function validate() {
-    const { data } = await apiClient.POST('/iban/validation', {
+    const { data, response } = await apiClient.POST('/iban/validation', {
       body: { iban },
     })
     setResult(data ?? null)
+    setError(
+      data
+        ? null
+        : response.status === 503
+          ? 'Validation is currently unavailable, please try again later.'
+          : 'Validation failed.',
+    )
   }
 
   return (
@@ -39,9 +47,10 @@ function App() {
           <p className={result.valid ? 'result valid' : 'result invalid'}>
             {result.valid
               ? `Valid (${result.countryCode})`
-              : result.failureReason}
+              : result.failureMessage}
           </p>
         )}
+        {error && <p className="result invalid">{error}</p>}
       </div>
     </main>
   )

@@ -10,6 +10,11 @@ spring:
     username: iban_validator
     password: ${DB_PASSWORD}
 
+# External IBAN validation (https://ibanapi.com).
+ibanapi:
+  base-url: https://api.ibanapi.com/v1
+  api-key: ${IBANAPI_KEY}
+
 management:
   endpoint:
     health:

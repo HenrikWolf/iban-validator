@@ -1,23 +1,16 @@
 package de.henrikwolf.ibanvalidator.iban;
 
-public record IbanValidationResult(String iban, String countryCode, FailureReason failureReason) {
-
-    public enum FailureReason {
-        INVALID_CHARACTERS,
-        UNSUPPORTED_COUNTRY,
-        INVALID_LENGTH,
-        INVALID_CHECKSUM
-    }
+public record IbanValidationResult(String iban, String countryCode, String failureMessage) {
 
     static IbanValidationResult valid(String iban, String countryCode) {
         return new IbanValidationResult(iban, countryCode, null);
     }
 
-    static IbanValidationResult invalid(String iban, FailureReason reason) {
-        return new IbanValidationResult(iban, null, reason);
+    static IbanValidationResult invalid(String iban, String message) {
+        return new IbanValidationResult(iban, null, message);
     }
 
     public boolean isValid() {
-        return failureReason == null;
+        return failureMessage == null;
     }
 }

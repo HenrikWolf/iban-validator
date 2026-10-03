@@ -15,23 +15,30 @@ Monorepo for an IBAN validation service and its web frontend, available at **htt
 `POST /api/v1/iban/validation`
 
 ```json
-{ "iban": "DE89 3704 0044 0532 0130 00" }
+{ "iban": "DE89 3704 0044 0532 0130 00", "validator": "IBANAPI" }
 ```
 
 ```json
 { "iban": "DE89370400440532013000", "valid": true, "countryCode": "DE" }
 ```
 
-An invalid IBAN returns `200` with `valid: false` and a `failureReason`
-(`INVALID_CHARACTERS`, `UNSUPPORTED_COUNTRY`, `INVALID_LENGTH`, `INVALID_CHECKSUM`).
-A missing or empty `iban` returns `400`.
+Spaces, dots and hyphens are removed and letters are upper-cased before validation. The optional field `validator`
+selects how the IBAN is checked:
+
+- `IBANAPI` (default): external check via [ibanapi.com](https://ibanapi.com) (`validate-basic`), which sends the IBAN to
+  this third party. If the service is unavailable, the API returns `503`; there is no fallback.
+- `INTERNAL`: own check of characters, country, length and checksum (ISO 13616).
+
+An invalid IBAN returns `200` with `valid: false` and a human-readable `failureMessage` (wording depends on the
+validator). A missing `iban`, an `iban` that is empty after removing separators, or an unknown `validator` returns `400`.
 
 Change the contract in `api/iban-validator.yaml`; the Maven build (server interface and DTOs) and the frontend scripts
 (TypeScript types) regenerate the code.
 
 ## Backend
 
-Requires JDK 21 and the environment variable `DB_PASSWORD` (password of the database user `iban_validator`).
+Requires JDK 21 and the environment variables `DB_PASSWORD` (password of the database user `iban_validator`) and
+`IBANAPI_KEY` (API key of ibanapi.com).
 
 ```powershell
 cd backend
@@ -74,8 +81,8 @@ run independently in any order.
 
 ### Prerequisites
 
-- GitHub repository secrets: `DIGITALOCEAN_ACCESS_TOKEN` and `DB_PASSWORD` (the *Backend* workflow stores the latter in
-  the Kubernetes secret `iban-validator-db`).
+- GitHub repository secrets: `DIGITALOCEAN_ACCESS_TOKEN`, `DB_PASSWORD` and `IBANAPI_KEY` (the *Backend* workflow
+  stores the latter two in the Kubernetes secrets `iban-validator-db` and `iban-validator-ibanapi`).
 - Managed database: database `iban_validator` owned by the user `iban_validator`; the Kubernetes cluster (and your IP for
   local development) as trusted sources.
 - Traefik and cert-manager, installed as DigitalOcean 1-Click Apps.

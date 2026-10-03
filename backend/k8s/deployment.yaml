@@ -32,6 +32,11 @@ spec:
                 secretKeyRef:
                   name: iban-validator-db
                   key: password
+            - name: IBANAPI_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: iban-validator-ibanapi
+                  key: api-key
           resources:
             requests:
               cpu: 100m

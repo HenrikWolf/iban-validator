@@ -16,9 +16,9 @@ paths:
       operationId: validateIban
       summary: Validate an IBAN
       description: |
-        Validates the given IBAN (country code, country specific length and mod-97 check digits).
-        Spaces are ignored and letters are treated case-insensitively.
-        An invalid IBAN is not an error: the response is `200` with `valid = false` and a `failureReason`.
+        Validates the given IBAN with the selected validator (default `IBANAPI`).
+        Separators (spaces, hyphens, dots) are removed and letters are upper-cased before validation.
+        An invalid IBAN is not an error: the response is `200` with `valid = false` and a `failureMessage`.
       requestBody:
         required: true
         content:
@@ -34,6 +34,8 @@ paths:
                 $ref: '#/components/schemas/IbanValidationResponse'
         '400':
           description: Malformed request (e.g. missing or empty `iban`)
+        '503':
+          description: The selected validator is currently unavailable (e.g. the external service does not respond)
 components:
   schemas:
     IbanValidationRequest:
@@ -46,6 +48,18 @@ components:
           minLength: 1
           maxLength: 64
           example: DE89 3704 0044 0532 0130 00
+        validator:
+          $ref: '#/components/schemas/IbanValidatorType'
+    IbanValidatorType:
+      type: string
+      description: |
+        Validator to use:
+        `IBANAPI` asks the external service ibanapi.com,
+        `INTERNAL` checks country code, country specific length and mod-97 check digits locally.
+      enum:
+        - IBANAPI
+        - INTERNAL
+      default: IBANAPI
     IbanValidationResponse:
       type: object
       required:
@@ -54,7 +68,7 @@ components:
       properties:
         iban:
           type: string
-          description: Normalized IBAN (spaces removed, upper case)
+          description: Normalized IBAN (separators removed, upper case)
           example: DE89370400440532013000
         valid:
           type: boolean
@@ -63,13 +77,7 @@ components:
           type: string
           description: ISO 3166-1 alpha-2 country code, if the IBAN is valid
           example: DE
-        failureReason:
-          $ref: '#/components/schemas/IbanFailureReason'
-    IbanFailureReason:
-      type: string
-      description: Reason why the IBAN is invalid. Absent if the IBAN is valid.
-      enum:
-        - INVALID_CHARACTERS
-        - UNSUPPORTED_COUNTRY
-        - INVALID_LENGTH
-        - INVALID_CHECKSUM
+        failureMessage:
+          type: string
+          description: Human-readable reason why the IBAN is invalid (wording depends on the validator). Absent if the IBAN is valid.
+          example: Invalid IBAN Checksum
