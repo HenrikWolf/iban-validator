@@ -32,8 +32,11 @@ class IbanControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @MockitoBean(name = "ibanApiValidator")
     private IbanApiValidator ibanApiValidator;
+
+    @MockitoBean(name = "ibanApiExtendedValidator")
+    private IbanApiValidator ibanApiExtendedValidator;
 
     @MockitoBean
     private IbanRepository ibanRepository;
@@ -48,7 +51,26 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.countryCode").value("DE"))
                 .andExpect(jsonPath("$.countryName").value("Germany"))
-                .andExpect(content().string(not(containsString("failureMessage"))));
+                .andExpect(content().string(not(containsString("failureMessage"))))
+                .andExpect(content().string(not(containsString("bankName"))));
+
+        verify(ibanApiValidator, never()).validate(anyString());
+        verify(ibanApiExtendedValidator, never()).validate(anyString());
+        verify(ibanRepository).saveIfAbsent(IBAN);
+    }
+
+    @Test
+    void usesExtendedExternalValidatorAndReturnsBankData() throws Exception {
+        when(ibanApiExtendedValidator.validate(IBAN)).thenReturn(
+                IbanValidationResult.valid(IBAN, "DE", "Germany", "Commerzbank", "COBADEFFXXX"));
+
+        post("""
+                {"iban": "%s", "validator": "IBANAPI_EXTENDED"}
+                """.formatted(IBAN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.bankName").value("Commerzbank"))
+                .andExpect(jsonPath("$.bic").value("COBADEFFXXX"));
 
         verify(ibanApiValidator, never()).validate(anyString());
         verify(ibanRepository).saveIfAbsent(IBAN);
@@ -66,6 +88,7 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.countryCode").value("DE"));
 
         verify(ibanApiValidator).validate(IBAN);
+        verify(ibanApiExtendedValidator, never()).validate(anyString());
         verify(ibanRepository).saveIfAbsent(IBAN);
     }
 

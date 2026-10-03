@@ -54,10 +54,12 @@ components:
       type: string
       description: |
         Validator to use:
-        `IBANAPI` asks the external service ibanapi.com,
+        `IBANAPI` asks the external service ibanapi.com (basic check),
+        `IBANAPI_EXTENDED` asks ibanapi.com including bank data (bank name, BIC),
         `INTERNAL` checks country code, country specific length and mod-97 check digits locally.
       enum:
         - IBANAPI
+        - IBANAPI_EXTENDED
         - INTERNAL
       default: INTERNAL
     IbanValidationResponse:
@@ -81,6 +83,14 @@ components:
           type: string
           description: English country name, if the IBAN is valid (wording depends on the validator)
           example: Germany
+        bankName:
+          type: string
+          description: Name of the bank, if the IBAN is valid and the bank is known (only `IBANAPI_EXTENDED`)
+          example: Commerzbank
+        bic:
+          type: string
+          description: BIC of the bank, if the IBAN is valid and the bank is known (only `IBANAPI_EXTENDED`)
+          example: COBADEFFXXX
         failureMessage:
           type: string
           description: Human-readable reason why the IBAN is invalid (wording depends on the validator). Absent if the IBAN is valid.

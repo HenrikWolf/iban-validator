@@ -24,4 +24,14 @@ class IbanApiConfiguration {
                 .requestFactory(requestFactory)
                 .build();
     }
+
+    @Bean
+    IbanApiValidator ibanApiValidator(RestClient ibanApiRestClient) {
+        return new IbanApiValidator(ibanApiRestClient, IbanApiValidator.Endpoint.BASIC);
+    }
+
+    @Bean
+    IbanApiValidator ibanApiExtendedValidator(RestClient ibanApiRestClient) {
+        return new IbanApiValidator(ibanApiRestClient, IbanApiValidator.Endpoint.EXTENDED);
+    }
 }

@@ -8,6 +8,7 @@ type ValidatorType = components['schemas']['IbanValidatorType']
 const VALIDATORS: Record<ValidatorType, string> = {
   INTERNAL: 'Internal',
   IBANAPI: 'ibanapi.com',
+  IBANAPI_EXTENDED: 'ibanapi.com [erweitert]',
 }
 
 function App() {
@@ -19,7 +20,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const needsConsent = validator === 'IBANAPI'
+  const needsConsent = validator !== 'INTERNAL'
 
   function selectValidator(value: ValidatorType) {
     setValidator(value)
@@ -121,6 +122,12 @@ function App() {
                 : `Valid (${result.countryCode})`
               : result.failureMessage}
           </p>
+        )}
+        {result?.valid && (result.bankName || result.bic) && (
+          <div className="bank-details">
+            {result.bankName && <p>{result.bankName}</p>}
+            {result.bic && <p>BIC: {result.bic}</p>}
+          </div>
         )}
         {error && <p className="result invalid">{error}</p>}
       </div>

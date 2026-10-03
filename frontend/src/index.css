@@ -31,11 +31,12 @@ body {
 }
 
 .iban-form input {
-  width: 22rem;
+  width: 19rem;
   border: 1px solid #d1d5db;
 }
 
 .iban-form select {
+  width: 14rem;
   border: 1px solid #d1d5db;
   background: #fff;
 }
@@ -89,4 +90,13 @@ body {
 
 .result.invalid {
   color: #b91c1c;
+}
+
+.bank-details {
+  margin-top: 4px;
+  color: #4b5563;
+}
+
+.bank-details p {
+  margin: 0;
 }

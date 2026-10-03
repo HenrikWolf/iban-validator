@@ -2,20 +2,25 @@ package de.henrikwolf.ibanvalidator.iban;
 
 import java.util.Locale;
 
-public record IbanValidationResult(String iban, String countryCode, String countryName, String failureMessage) {
+public record IbanValidationResult(String iban, String countryCode, String countryName, String bankName, String bic,
+                                   String failureMessage) {
 
     static IbanValidationResult valid(String iban, String countryCode) {
         return valid(iban, countryCode, null);
     }
 
-    /** Without a given name, the English country name is derived from the country code. */
     static IbanValidationResult valid(String iban, String countryCode, String countryName) {
+        return valid(iban, countryCode, countryName, null, null);
+    }
+
+    /** Without a given name, the English country name is derived from the country code. */
+    static IbanValidationResult valid(String iban, String countryCode, String countryName, String bankName, String bic) {
         return new IbanValidationResult(iban, countryCode,
-                countryName != null ? countryName : countryNameOf(countryCode), null);
+                countryName != null ? countryName : countryNameOf(countryCode), bankName, bic, null);
     }
 
     static IbanValidationResult invalid(String iban, String message) {
-        return new IbanValidationResult(iban, null, null, message);
+        return new IbanValidationResult(iban, null, null, null, null, message);
     }
 
     public boolean isValid() {

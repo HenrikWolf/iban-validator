@@ -29,6 +29,9 @@ selects how the IBAN is checked:
 - `IBANAPI`: external check via [ibanapi.com](https://ibanapi.com) (`validate-basic`), which sends the IBAN to this
   third party. If the service is unavailable, the API returns `503`; there is no fallback. The frontend only allows
   this after the user has consented to the transfer.
+- `IBANAPI_EXTENDED` (frontend: *ibanapi.com [erweitert]*): like `IBANAPI`, but via the endpoint `validate`, which
+  additionally returns bank data. A valid response then contains `bankName` and `bic` if the bank is known. These calls
+  use the separate bank balance of the ibanapi.com account. Bank data is only returned, not stored.
 
 An invalid IBAN returns `200` with `valid: false` and a human-readable `failureMessage` (wording depends on the
 validator). A missing `iban`, an `iban` that is empty after removing separators, or an unknown `validator` returns `400`.

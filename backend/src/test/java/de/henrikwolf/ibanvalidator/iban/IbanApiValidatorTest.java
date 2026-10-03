@@ -28,6 +28,7 @@ class IbanApiValidatorTest {
 
     private MockRestServiceServer server;
     private IbanApiValidator validator;
+    private IbanApiValidator extendedValidator;
 
     @BeforeEach
     void setUp() {
@@ -35,7 +36,8 @@ class IbanApiValidatorTest {
                 .baseUrl(BASE_URL)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "test-key");
         server = MockRestServiceServer.bindTo(builder).build();
-        validator = new IbanApiValidator(builder.build());
+        validator = new IbanApiValidator(builder.build(), IbanApiValidator.Endpoint.BASIC);
+        extendedValidator = new IbanApiValidator(builder.build(), IbanApiValidator.Endpoint.EXTENDED);
     }
 
     @AfterEach
@@ -58,6 +60,8 @@ class IbanApiValidatorTest {
         assertThat(result.isValid()).isTrue();
         assertThat(result.countryCode()).isEqualTo("DE");
         assertThat(result.countryName()).isEqualTo("Germany (ibanapi)");
+        assertThat(result.bankName()).isNull();
+        assertThat(result.bic()).isNull();
         assertThat(result.failureMessage()).isNull();
     }
 
@@ -149,8 +153,57 @@ class IbanApiValidatorTest {
         assertThatThrownBy(() -> validator.validate(IBAN)).isInstanceOf(ValidatorUnavailableException.class);
     }
 
+    @Test
+    void extendedValidatorReturnsBankData() {
+        expectCall("/validate/", IBAN).andRespond(json(HttpStatus.OK, """
+                {"result": 200, "message": "Valid IBAN Number",
+                 "validations": [{"result": 200, "message": "Valid IBAN Checksum"}],
+                 "data": {"country_code": "DE", "country_name": "Germany",
+                          "bank": {"bank_name": "Commerzbank", "bic": "COBADEFFXXX", "city": "Koeln"}}}
+                """));
+
+        IbanValidationResult result = extendedValidator.validate(IBAN);
+
+        assertThat(result.isValid()).isTrue();
+        assertThat(result.bankName()).isEqualTo("Commerzbank");
+        assertThat(result.bic()).isEqualTo("COBADEFFXXX");
+    }
+
+    @Test
+    void extendedValidatorToleratesUnknownBankAsEmptyArray() {
+        expectCall("/validate/", IBAN).andRespond(json(HttpStatus.OK, """
+                {"result": 200, "message": "Valid IBAN Number",
+                 "validations": [{"result": 200, "message": "Valid IBAN Checksum"}],
+                 "data": {"country_code": "DE", "bank": []}}
+                """));
+
+        IbanValidationResult result = extendedValidator.validate(IBAN);
+
+        assertThat(result.isValid()).isTrue();
+        assertThat(result.bankName()).isNull();
+        assertThat(result.bic()).isNull();
+    }
+
+    @Test
+    void extendedValidatorTreatsEmptyBankValuesAsUnknown() {
+        expectCall("/validate/", IBAN).andRespond(json(HttpStatus.OK, """
+                {"result": 200, "message": "Valid IBAN Number",
+                 "validations": [{"result": 200, "message": "Valid IBAN Checksum"}],
+                 "data": {"country_code": "DE", "bank": {"bank_name": "", "bic": " "}}}
+                """));
+
+        IbanValidationResult result = extendedValidator.validate(IBAN);
+
+        assertThat(result.bankName()).isNull();
+        assertThat(result.bic()).isNull();
+    }
+
     private ResponseActions expectCall(String encodedIban) {
-        return server.expect(requestTo(BASE_URL + "/validate-basic/" + encodedIban))
+        return expectCall("/validate-basic/", encodedIban);
+    }
+
+    private ResponseActions expectCall(String path, String encodedIban) {
+        return server.expect(requestTo(BASE_URL + path + encodedIban))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "test-key"));
     }

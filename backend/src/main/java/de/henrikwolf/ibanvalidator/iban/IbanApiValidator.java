@@ -3,24 +3,37 @@ package de.henrikwolf.ibanvalidator.iban;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 /**
- * Validates IBANs with the external service ibanapi.com (endpoint {@code validate-basic}, 1 credit per call).
- * The API key is sent as {@code Authorization} header, see {@link IbanApiConfiguration}.
+ * Validates IBANs with the external service ibanapi.com. Each call costs one credit of the endpoint's balance
+ * (basic or bank). The API key is sent as {@code Authorization} header, see {@link IbanApiConfiguration}.
  */
-@Service
 public class IbanApiValidator implements IbanValidator {
 
     private static final int OK = 200;
 
-    private final RestClient ibanApiRestClient;
+    /** ibanapi.com endpoints; {@code EXTENDED} additionally returns bank data. */
+    public enum Endpoint {
+        BASIC("/validate-basic/{iban}"),
+        EXTENDED("/validate/{iban}");
 
-    public IbanApiValidator(RestClient ibanApiRestClient) {
+        private final String uri;
+
+        Endpoint(String uri) {
+            this.uri = uri;
+        }
+    }
+
+    private final RestClient ibanApiRestClient;
+    private final Endpoint endpoint;
+
+    public IbanApiValidator(RestClient ibanApiRestClient, Endpoint endpoint) {
         this.ibanApiRestClient = ibanApiRestClient;
+        this.endpoint = endpoint;
     }
 
     @Override
@@ -33,8 +46,10 @@ public class IbanApiValidator implements IbanValidator {
                     + (response == null ? "empty response" : response.result() + " " + response.message()));
         }
         if (response.result() == OK) {
-            return IbanValidationResult.valid(iban, countryCodeOf(iban, response),
-                    response.data() != null ? response.data().countryName() : null);
+            Data data = response.data();
+            return IbanValidationResult.valid(iban, countryCodeOf(iban, data),
+                    data != null ? data.countryName() : null,
+                    bankValue(data, "bank_name"), bankValue(data, "bic"));
         }
 
         String message = response.validations().stream()
@@ -44,19 +59,28 @@ public class IbanApiValidator implements IbanValidator {
         return IbanValidationResult.invalid(iban, message.isEmpty() ? response.message() : message);
     }
 
-    private static String countryCodeOf(String iban, IbanApiResponse response) {
+    private static String countryCodeOf(String iban, Data data) {
         // Prefer the provider's country code, fall back to the first two characters of the IBAN.
-        if (response.data() != null && response.data().countryCode() != null) {
-            return response.data().countryCode();
+        if (data != null && data.countryCode() != null) {
+            return data.countryCode();
         }
         return iban.substring(0, 2);
+    }
+
+    // The provider sends an empty array instead of an object if nothing is known, and empty strings for unknown values.
+    private static String bankValue(Data data, String key) {
+        if (data != null && data.bank() instanceof Map<?, ?> bank && bank.get(key) instanceof String value
+                && !value.isBlank()) {
+            return value;
+        }
+        return null;
     }
 
     private IbanApiResponse call(String iban) {
         try {
             // exchange() instead of retrieve(): invalid IBANs are answered with 4xx and still carry a body.
             return ibanApiRestClient.get()
-                    .uri("/validate-basic/{iban}", iban)
+                    .uri(endpoint.uri, iban)
                     .exchange((request, response) -> response.bodyTo(IbanApiResponse.class));
         } catch (RestClientException e) {
             // Do not include the exception message: it carries the request URL incl. the IBAN.
@@ -74,6 +98,7 @@ public class IbanApiValidator implements IbanValidator {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record Data(@JsonProperty("country_code") String countryCode,
-                @JsonProperty("country_name") String countryName) {
+                @JsonProperty("country_name") String countryName,
+                Object bank) {
     }
 }
