@@ -12,3 +12,6 @@ dist/
 
 ### IDE ###
 .idea/
+
+# Generated from api/iban-validator.yaml
+frontend/src/api/schema.d.ts
