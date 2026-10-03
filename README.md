@@ -15,19 +15,20 @@ Monorepo for an IBAN validation service and its web frontend, available at **htt
 `POST /api/v1/iban/validation`
 
 ```json
-{ "iban": "DE89 3704 0044 0532 0130 00", "validator": "IBANAPI" }
+{ "iban": "DE89 3704 0044 0532 0130 00", "validator": "INTERNAL" }
 ```
 
 ```json
-{ "iban": "DE89370400440532013000", "valid": true, "countryCode": "DE" }
+{ "iban": "DE89370400440532013000", "valid": true, "countryCode": "DE", "countryName": "Germany" }
 ```
 
 Spaces, dots and hyphens are removed and letters are upper-cased before validation. The optional field `validator`
 selects how the IBAN is checked:
 
-- `IBANAPI` (default): external check via [ibanapi.com](https://ibanapi.com) (`validate-basic`), which sends the IBAN to
-  this third party. If the service is unavailable, the API returns `503`; there is no fallback.
-- `INTERNAL`: own check of characters, country, length and checksum (ISO 13616).
+- `INTERNAL` (default): own check of characters, country, length and checksum (ISO 13616).
+- `IBANAPI`: external check via [ibanapi.com](https://ibanapi.com) (`validate-basic`), which sends the IBAN to this
+  third party. If the service is unavailable, the API returns `503`; there is no fallback. The frontend only allows
+  this after the user has consented to the transfer.
 
 An invalid IBAN returns `200` with `valid: false` and a human-readable `failureMessage` (wording depends on the
 validator). A missing `iban`, an `iban` that is empty after removing separators, or an unknown `validator` returns `400`.

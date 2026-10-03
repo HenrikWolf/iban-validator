@@ -21,6 +21,7 @@ body {
 }
 
 .iban-form input,
+.iban-form select,
 .iban-form button {
   font: inherit;
   font-size: 16px;
@@ -33,11 +34,30 @@ body {
   border: 1px solid #d1d5db;
 }
 
+.iban-form select {
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
 .iban-form button {
   border: 1px solid #1f2937;
   background: #1f2937;
   color: #fff;
   cursor: pointer;
+}
+
+.iban-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.consent {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 36rem;
+  margin-top: 12px;
+  font-size: 14px;
 }
 
 .visually-hidden {

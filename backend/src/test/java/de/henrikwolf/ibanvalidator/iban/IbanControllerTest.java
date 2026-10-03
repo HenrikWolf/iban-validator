@@ -39,9 +39,7 @@ class IbanControllerTest {
     private IbanRepository ibanRepository;
 
     @Test
-    void usesExternalValidatorByDefaultWithNormalizedIban() throws Exception {
-        when(ibanApiValidator.validate(IBAN)).thenReturn(IbanValidationResult.valid(IBAN, "DE"));
-
+    void usesInternalValidatorByDefaultWithNormalizedIban() throws Exception {
         post("""
                 {"iban": "de89 3704-0044.0532 0130 00"}
                 """)
@@ -49,8 +47,25 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.iban").value(IBAN))
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.countryCode").value("DE"))
+                .andExpect(jsonPath("$.countryName").value("Germany"))
                 .andExpect(content().string(not(containsString("failureMessage"))));
 
+        verify(ibanApiValidator, never()).validate(anyString());
+        verify(ibanRepository).saveIfAbsent(IBAN);
+    }
+
+    @Test
+    void usesExternalValidatorIfSelected() throws Exception {
+        when(ibanApiValidator.validate(IBAN)).thenReturn(IbanValidationResult.valid(IBAN, "DE"));
+
+        post("""
+                {"iban": "de89 3704 0044 0532 0130 00", "validator": "IBANAPI"}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.countryCode").value("DE"));
+
+        verify(ibanApiValidator).validate(IBAN);
         verify(ibanRepository).saveIfAbsent(IBAN);
     }
 
@@ -83,22 +98,11 @@ class IbanControllerTest {
     }
 
     @Test
-    void storesValidIbanOfInternalValidator() throws Exception {
-        post("""
-                {"iban": "%s", "validator": "INTERNAL"}
-                """.formatted(IBAN))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid").value(true));
-
-        verify(ibanRepository).saveIfAbsent(IBAN);
-    }
-
-    @Test
     void returnsServiceUnavailableIfValidatorIsUnavailable() throws Exception {
         when(ibanApiValidator.validate(IBAN)).thenThrow(new ValidatorUnavailableException("down"));
 
         post("""
-                {"iban": "%s"}
+                {"iban": "%s", "validator": "IBANAPI"}
                 """.formatted(IBAN))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.detail")

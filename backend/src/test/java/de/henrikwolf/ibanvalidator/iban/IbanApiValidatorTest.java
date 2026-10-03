@@ -50,14 +50,26 @@ class IbanApiValidatorTest {
                  "validations": [{"result": 200, "message": "Valid IBAN length"},
                                  {"result": 200, "message": "Valid IBAN Checksum"},
                                  {"result": 200, "message": "Valid IBAN Structure"}],
-                 "expremental": 0, "data": {"country_code": "DE", "sepa": {}}}
+                 "expremental": 0, "data": {"country_code": "DE", "country_name": "Germany (ibanapi)", "sepa": {}}}
                 """));
 
         IbanValidationResult result = validator.validate(IBAN);
 
         assertThat(result.isValid()).isTrue();
         assertThat(result.countryCode()).isEqualTo("DE");
+        assertThat(result.countryName()).isEqualTo("Germany (ibanapi)");
         assertThat(result.failureMessage()).isNull();
+    }
+
+    @Test
+    void derivesCountryNameIfProviderSendsNone() {
+        expectCall(IBAN).andRespond(json(HttpStatus.OK, """
+                {"result": 200, "message": "Valid IBAN Number",
+                 "validations": [{"result": 200, "message": "Valid IBAN Checksum"}],
+                 "data": {"country_code": "DE"}}
+                """));
+
+        assertThat(validator.validate(IBAN).countryName()).isEqualTo("Germany");
     }
 
     @Test

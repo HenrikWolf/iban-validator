@@ -14,20 +14,21 @@ class InternalIbanValidatorTest {
 
     @ParameterizedTest
     @CsvSource({
-            "DE89370400440532013000, DE",
-            "GB82WEST12345698765432, GB",
-            "AT611904300234573201, AT",
-            "CH9300762011623852957, CH",
-            "NL91ABNA0417164300, NL",
-            "NO9386011117947, NO",
-            "FR1420041010050500013M02606, FR",
-            "MT84MALT011000012345MTLCAST001S, MT"
+            "DE89370400440532013000, DE, Germany",
+            "GB82WEST12345698765432, GB, United Kingdom",
+            "AT611904300234573201, AT, Austria",
+            "CH9300762011623852957, CH, Switzerland",
+            "NL91ABNA0417164300, NL, Netherlands",
+            "NO9386011117947, NO, Norway",
+            "FR1420041010050500013M02606, FR, France",
+            "MT84MALT011000012345MTLCAST001S, MT, Malta"
     })
-    void acceptsValidIbans(String iban, String countryCode) {
+    void acceptsValidIbans(String iban, String countryCode, String countryName) {
         IbanValidationResult result = validator.validate(iban);
 
         assertThat(result.isValid()).isTrue();
         assertThat(result.countryCode()).isEqualTo(countryCode);
+        assertThat(result.countryName()).isEqualTo(countryName);
         assertThat(result.failureMessage()).isNull();
     }
 

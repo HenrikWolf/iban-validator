@@ -16,7 +16,7 @@ paths:
       operationId: validateIban
       summary: Validate an IBAN
       description: |
-        Validates the given IBAN with the selected validator (default `IBANAPI`).
+        Validates the given IBAN with the selected validator (default `INTERNAL`).
         Separators (spaces, hyphens, dots) are removed and letters are upper-cased before validation.
         An invalid IBAN is not an error: the response is `200` with `valid = false` and a `failureMessage`.
       requestBody:
@@ -59,7 +59,7 @@ components:
       enum:
         - IBANAPI
         - INTERNAL
-      default: IBANAPI
+      default: INTERNAL
     IbanValidationResponse:
       type: object
       required:
@@ -77,6 +77,10 @@ components:
           type: string
           description: ISO 3166-1 alpha-2 country code, if the IBAN is valid
           example: DE
+        countryName:
+          type: string
+          description: English country name, if the IBAN is valid (wording depends on the validator)
+          example: Germany
         failureMessage:
           type: string
           description: Human-readable reason why the IBAN is invalid (wording depends on the validator). Absent if the IBAN is valid.

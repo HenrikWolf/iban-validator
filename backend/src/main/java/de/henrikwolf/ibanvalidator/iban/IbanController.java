@@ -44,6 +44,7 @@ public class IbanController implements IbanApi {
         }
         IbanValidationResponse response = new IbanValidationResponse(result.iban(), result.isValid())
                 .countryCode(result.countryCode())
+                .countryName(result.countryName())
                 .failureMessage(result.failureMessage());
         return ResponseEntity.ok(response);
     }
@@ -57,7 +58,7 @@ public class IbanController implements IbanApi {
     }
 
     private IbanValidator validatorFor(IbanValidatorType type) {
-        return type == IbanValidatorType.INTERNAL ? internalIbanValidator : ibanApiValidator;
+        return type == IbanValidatorType.IBANAPI ? ibanApiValidator : internalIbanValidator;
     }
 
     // Storing is secondary: a database problem must not break the validation.

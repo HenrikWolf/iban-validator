@@ -3,24 +3,56 @@ import { apiClient } from './api/client'
 import type { components } from './api/schema'
 
 type ValidationResult = components['schemas']['IbanValidationResponse']
+type ValidatorType = components['schemas']['IbanValidatorType']
+
+const VALIDATORS: Record<ValidatorType, string> = {
+  INTERNAL: 'Internal',
+  IBANAPI: 'ibanapi.com',
+}
 
 function App() {
   const [iban, setIban] = useState('')
+  const [validator, setValidator] = useState<ValidatorType>('INTERNAL')
+  const [consent, setConsent] = useState(false)
   const [result, setResult] = useState<ValidationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const needsConsent = validator === 'IBANAPI'
+
+  function selectValidator(value: ValidatorType) {
+    setValidator(value)
+    setResult(null)
+    setError(null)
+    // Consent is given for one choice only; ask again after switching back to the external service.
+    setConsent(false)
+  }
 
   async function validate() {
-    const { data, response } = await apiClient.POST('/iban/validation', {
-      body: { iban },
-    })
-    setResult(data ?? null)
-    setError(
-      data
-        ? null
-        : response.status === 503
-          ? 'Validation is currently unavailable, please try again later.'
-          : 'Validation failed.',
-    )
+    setResult(null)
+    if (iban.trim() === '') {
+      setError('Please enter an IBAN.')
+      return
+    }
+    setError(null)
+    setLoading(true)
+    try {
+      const { data, response } = await apiClient.POST('/iban/validation', {
+        body: { iban, validator },
+      })
+      setResult(data ?? null)
+      if (!data) {
+        setError(
+          response.status === 503
+            ? 'Validation is currently unavailable, please try again later.'
+            : 'Validation failed.',
+        )
+      }
+    } catch {
+      setError('Validation failed.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -39,14 +71,45 @@ function App() {
             value={iban}
             onChange={(event) => setIban(event.target.value)}
           />
-          <button type="button" onClick={validate}>
-            Validate
+          <label htmlFor="validator" className="visually-hidden">
+            Validator
+          </label>
+          <select
+            id="validator"
+            value={validator}
+            onChange={(event) => selectValidator(event.target.value as ValidatorType)}
+          >
+            {Object.entries(VALIDATORS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={validate}
+            disabled={loading || (needsConsent && !consent)}
+          >
+            {loading ? 'Validating…' : 'Validate'}
           </button>
         </div>
+        {needsConsent && (
+          <label className="consent">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+            />
+            Ich willige ein, dass meine IBAN zur Validierung an den externen
+            Dienst ibanapi.com übertragen wird.
+          </label>
+        )}
         {result && (
           <p className={result.valid ? 'result valid' : 'result invalid'}>
             {result.valid
-              ? `Valid (${result.countryCode})`
+              ? result.countryName
+                ? `Valid – ${result.countryName} (${result.countryCode})`
+                : `Valid (${result.countryCode})`
               : result.failureMessage}
           </p>
         )}

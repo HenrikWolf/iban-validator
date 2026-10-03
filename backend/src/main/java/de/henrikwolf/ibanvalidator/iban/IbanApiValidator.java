@@ -33,7 +33,8 @@ public class IbanApiValidator implements IbanValidator {
                     + (response == null ? "empty response" : response.result() + " " + response.message()));
         }
         if (response.result() == OK) {
-            return IbanValidationResult.valid(iban, countryCodeOf(iban, response));
+            return IbanValidationResult.valid(iban, countryCodeOf(iban, response),
+                    response.data() != null ? response.data().countryName() : null);
         }
 
         String message = response.validations().stream()
@@ -72,6 +73,7 @@ public class IbanApiValidator implements IbanValidator {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Data(@JsonProperty("country_code") String countryCode) {
+    record Data(@JsonProperty("country_code") String countryCode,
+                @JsonProperty("country_name") String countryName) {
     }
 }
