@@ -3,6 +3,12 @@ spring:
     name: iban-validator
   jackson:
     default-property-inclusion: non_null
+  # DigitalOcean managed database. Locally via the public host (your IP must be a trusted source),
+  # in the cluster via the private VPC host (DB_HOST is set in backend/k8s/deployment.yaml).
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:db-pgsql-fra1-05477-do-user-45507256-0.f.db.ondigitalocean.com}:25060/iban_validator?sslmode=require
+    username: iban_validator
+    password: ${DB_PASSWORD}
 
 management:
   endpoint:

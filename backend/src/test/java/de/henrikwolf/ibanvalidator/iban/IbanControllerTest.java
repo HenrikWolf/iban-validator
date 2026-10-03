@@ -2,6 +2,10 @@ package de.henrikwolf.ibanvalidator.iban;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,7 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(IbanController.class)
@@ -22,6 +28,9 @@ class IbanControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private IbanRepository ibanRepository;
 
     @Test
     void returnsValidResultForValidIban() throws Exception {
@@ -36,6 +45,22 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.countryCode").value("DE"))
                 .andExpect(jsonPath("$.failureReason").doesNotExist())
                 .andExpect(content().string(not(containsString("failureReason"))));
+
+        verify(ibanRepository).saveIfAbsent("DE89370400440532013000");
+    }
+
+    @Test
+    void returnsResultEvenIfStoringFails() throws Exception {
+        doThrow(new DataAccessResourceFailureException("database down"))
+                .when(ibanRepository).saveIfAbsent(anyString());
+
+        mockMvc.perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"iban": "DE89370400440532013000"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true));
     }
 
     @Test
@@ -49,6 +74,8 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.valid").value(false))
                 .andExpect(jsonPath("$.countryCode").doesNotExist())
                 .andExpect(jsonPath("$.failureReason").value("INVALID_CHECKSUM"));
+
+        verify(ibanRepository, never()).saveIfAbsent(anyString());
     }
 
     @Test

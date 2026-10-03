@@ -43,9 +43,12 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 "$CLUSTER"
 
       - name: Deploy
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
           doctl registry kubernetes-manifest --namespace "$NAMESPACE" | kubectl apply -f -
+          kubectl -n "$NAMESPACE" create secret generic iban-validator-db --from-literal=password="$DB_PASSWORD" --dry-run=client -o yaml | kubectl apply -f -
           sed -i "s|$IMAGE:latest|$IMAGE:$GITHUB_SHA|" k8s/deployment.yaml
           kubectl apply -f k8s/
           kubectl -n "$NAMESPACE" rollout status deployment/iban-validator-backend --timeout=180s
