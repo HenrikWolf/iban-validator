@@ -1,6 +1,8 @@
 spring:
   application:
     name: iban-validator
+  jackson:
+    default-property-inclusion: non_null
 
 management:
   endpoint:

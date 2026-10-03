@@ -1,6 +1,9 @@
 package de.henrikwolf.ibanvalidator.iban;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,7 +34,8 @@ class IbanControllerTest {
                 .andExpect(jsonPath("$.iban").value("DE89370400440532013000"))
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.countryCode").value("DE"))
-                .andExpect(jsonPath("$.failureReason").doesNotExist());
+                .andExpect(jsonPath("$.failureReason").doesNotExist())
+                .andExpect(content().string(not(containsString("failureReason"))));
     }
 
     @Test
