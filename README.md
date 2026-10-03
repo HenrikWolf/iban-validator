@@ -38,8 +38,9 @@ Change the contract in `api/iban-validator.yaml`; the Maven build (server interf
 
 ## Backend
 
-Requires JDK 21 and the environment variables `DB_PASSWORD` (password of the database user `iban_validator`) and
-`IBANAPI_KEY` (API key of ibanapi.com).
+Requires JDK 21 and the environment variables `DB_PASSWORD` (password of the database user `iban_validator`),
+`IBANAPI_KEY` (API key of ibanapi.com) and `IBAN_ENCRYPTION_KEY` (secret key used to encrypt stored IBANs; generate a
+random one with `openssl rand -base64 32`). Optional: `IBAN_RETENTION` (e.g. `30d`) and `IBAN_CLEANUP_CRON`.
 
 ```powershell
 cd backend
@@ -49,9 +50,20 @@ cd backend
 
 ### Database
 
-Every valid IBAN is stored once (normalized, with the time of the first check) in the table `iban` of a DigitalOcean
+Every valid IBAN is stored once (with the time of the first check) in the table `iban` of a DigitalOcean
 Managed PostgreSQL 18. Invalid IBANs are not stored. If storing fails, the error is logged and the validation result is
 still returned. The schema is managed by Flyway (`backend/src/main/resources/db/migration`) and migrated on startup.
+
+Because an IBAN is personal data, it is **not stored in clear text**:
+
+- The IBAN is **encrypted** with AES-256-GCM (`Encryptors.delux` of spring-security-crypto) before it is written
+  (`iban_encrypted` column).
+- A deterministic **blind index** (HMAC-SHA256, `iban_lookup` column) is stored alongside so duplicates can still be
+  detected (`ON CONFLICT`) without keeping the IBAN readable.
+- Both use the secret `IBAN_ENCRYPTION_KEY`; the AES key is derived from it and the salt `iban.encryption-salt`
+  (`application.yaml`). The salt is not secret, but changing it makes stored IBANs unreadable.
+- A scheduled cleanup job enforces **storage limitation**: stored IBANs are deleted once they are older than
+  `IBAN_RETENTION` (default 30 days). Schedule and retention are configurable (`iban.retention`, `iban.cleanup-cron`).
 
 Connection settings are in `application.yaml`. Locally, the backend uses the public host of the database, so your IP
 must be a trusted source. **This is the same database the deployed backend uses.**
@@ -82,8 +94,9 @@ run independently in any order.
 
 ### Prerequisites
 
-- GitHub repository secrets: `DIGITALOCEAN_ACCESS_TOKEN`, `DB_PASSWORD` and `IBANAPI_KEY` (the *Backend* workflow
-  stores the latter two in the Kubernetes secrets `iban-validator-db` and `iban-validator-ibanapi`).
+- GitHub repository secrets: `DIGITALOCEAN_ACCESS_TOKEN`, `DB_PASSWORD`, `IBANAPI_KEY` and `IBAN_ENCRYPTION_KEY` (the
+  *Backend* workflow stores the latter three in the Kubernetes secrets `iban-validator-db`, `iban-validator-ibanapi`
+  and `iban-validator-encryption`). Losing `IBAN_ENCRYPTION_KEY` makes the stored IBANs unreadable, so keep it safe.
 - Managed database: database `iban_validator` owned by the user `iban_validator`; the Kubernetes cluster (and your IP for
   local development) as trusted sources.
 - Traefik and cert-manager, installed as DigitalOcean 1-Click Apps.

@@ -15,6 +15,17 @@ ibanapi:
   base-url: https://api.ibanapi.com/v1
   api-key: ${IBANAPI_KEY}
 
+# IBANs are personal data: stored encrypted (AES-256-GCM) and deleted after the retention period.
+iban:
+  # Secret key (e.g. `openssl rand -base64 32`); the AES key is derived from it and the salt, the blind index uses it directly.
+  encryption-key: ${IBAN_ENCRYPTION_KEY}
+  # Hex-encoded salt for the key derivation. Not secret, but changing it makes stored IBANs unreadable.
+  encryption-salt: 66eeafa80f6c896ab6146bff901cd0a7
+  # How long a stored IBAN is kept before the cleanup job deletes it.
+  retention: ${IBAN_RETENTION:30d}
+  # Schedule of the cleanup job (Spring cron: sec min hour day month weekday); default daily at 03:00.
+  cleanup-cron: ${IBAN_CLEANUP_CRON:0 0 3 * * *}
+
 management:
   endpoint:
     health:
