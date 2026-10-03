@@ -24,16 +24,18 @@ public class IbanController implements IbanApi {
     private final IbanApiValidator ibanApiValidator;
     private final IbanApiValidator ibanApiExtendedValidator;
     private final IbanRepository ibanRepository;
+    private final BankRepository bankRepository;
 
     public IbanController(IbanNormalizer ibanNormalizer, InternalIbanValidator internalIbanValidator,
                           @Qualifier("ibanApiValidator") IbanApiValidator ibanApiValidator,
                           @Qualifier("ibanApiExtendedValidator") IbanApiValidator ibanApiExtendedValidator,
-                          IbanRepository ibanRepository) {
+                          IbanRepository ibanRepository, BankRepository bankRepository) {
         this.ibanNormalizer = ibanNormalizer;
         this.internalIbanValidator = internalIbanValidator;
         this.ibanApiValidator = ibanApiValidator;
         this.ibanApiExtendedValidator = ibanApiExtendedValidator;
         this.ibanRepository = ibanRepository;
+        this.bankRepository = bankRepository;
     }
 
     @Override
@@ -44,14 +46,12 @@ public class IbanController implements IbanApi {
             return ResponseEntity.badRequest().build();
         }
         IbanValidationResult result = validatorFor(request.getValidator()).validate(iban);
-        if (result.isValid()) {
-            store(result.iban());
-        }
+        Bank bank = result.isValid() ? storeAndFindBank(result) : null;
         IbanValidationResponse response = new IbanValidationResponse(result.iban(), result.isValid())
                 .countryCode(result.countryCode())
                 .countryName(result.countryName())
-                .bankName(result.bankName())
-                .bic(result.bic())
+                .bankName(bank != null ? bank.bankName() : null)
+                .bic(bank != null ? bank.bic() : null)
                 .failureMessage(result.failureMessage());
         return ResponseEntity.ok(response);
     }
@@ -73,12 +73,35 @@ public class IbanController implements IbanApi {
         };
     }
 
-    // Storing is secondary: a database problem must not break the validation.
-    private void store(String iban) {
+    // Storing and reading banks is secondary: a database problem must not break the validation.
+    private Bank storeAndFindBank(IbanValidationResult result) {
+        Bank reported = bankOf(result);
         try {
-            ibanRepository.saveIfAbsent(iban);
+            if (reported != null) {
+                ibanRepository.saveIfAbsent(result.iban(), bankRepository.save(reported));
+                return reported;
+            }
+            String bankCode = germanBankCode(result);
+            boolean linked = ibanRepository.findBank(result.iban()).isPresent();
+            Long bankId = bankCode != null && !linked ? bankRepository.saveBankCode(bankCode) : null;
+            ibanRepository.saveIfAbsent(result.iban(), bankId);
+            return ibanRepository.findBank(result.iban()).orElse(null);
         } catch (DataAccessException e) {
-            log.warn("Could not store IBAN", e);
+            log.warn("Could not store IBAN or bank", e);
+            return reported;
         }
+    }
+
+    private Bank bankOf(IbanValidationResult result) {
+        if (result.bic() == null || result.bankName() == null) {
+            return null;
+        }
+        return new Bank(result.bic(), result.bankName(), result.countryName(), germanBankCode(result));
+    }
+
+    // German IBANs carry the 8-digit Bankleitzahl at positions 5-12.
+    private String germanBankCode(IbanValidationResult result) {
+        return "DE".equals(result.countryCode()) && result.iban().length() >= 12
+                ? result.iban().substring(4, 12) : null;
     }
 }

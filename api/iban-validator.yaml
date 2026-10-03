@@ -85,11 +85,11 @@ components:
           example: Germany
         bankName:
           type: string
-          description: Name of the bank, if the IBAN is valid and the bank is known (only `IBANAPI_EXTENDED`)
+          description: Name of the bank, if the IBAN is valid and the bank is known (from `IBANAPI_EXTENDED`, or for other validators from an earlier extended validation of the same IBAN)
           example: Commerzbank
         bic:
           type: string
-          description: BIC of the bank, if the IBAN is valid and the bank is known (only `IBANAPI_EXTENDED`)
+          description: BIC of the bank, if the IBAN is valid and the bank is known (from `IBANAPI_EXTENDED`, or for other validators from an earlier extended validation of the same IBAN)
           example: COBADEFFXXX
         failureMessage:
           type: string

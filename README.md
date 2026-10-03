@@ -31,7 +31,7 @@ selects how the IBAN is checked:
   this after the user has consented to the transfer.
 - `IBANAPI_EXTENDED` (frontend: *ibanapi.com [erweitert]*): like `IBANAPI`, but via the endpoint `validate`, which
   additionally returns bank data. A valid response then contains `bankName` and `bic` if the bank is known. These calls
-  use the separate bank balance of the ibanapi.com account. Bank data is only returned, not stored.
+  use the separate bank balance of the ibanapi.com account. Returned bank data is stored in the table `bank` and linked to the stored IBAN. German banks are keyed by their bank code (BLZ), foreign banks by their BIC; an existing entry is overwritten with the newer data. For German IBANs the bank code is always stored and linked to the IBAN, even without BIC and bank name; an extended validation later fills that entry. The other validators return the linked bank data, if any (a few large German banks are seeded by Flyway).
 
 An invalid IBAN returns `200` with `valid: false` and a human-readable `failureMessage` (wording depends on the
 validator). A missing `iban`, an `iban` that is empty after removing separators, or an unknown `validator` returns `400`.
