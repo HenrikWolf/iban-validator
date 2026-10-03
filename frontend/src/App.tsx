@@ -123,10 +123,11 @@ function App() {
               : result.failureMessage}
           </p>
         )}
-        {result?.valid && (result.bankName || result.bic) && (
+        {result?.valid && (result.bankName || result.bic || result.bankCode) && (
           <div className="bank-details">
             {result.bankName && <p>{result.bankName}</p>}
             {result.bic && <p>BIC: {result.bic}</p>}
+            {result.bankCode && <p>BLZ: {result.bankCode}</p>}
           </div>
         )}
         {error && <p className="result invalid">{error}</p>}

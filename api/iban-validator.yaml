@@ -91,6 +91,10 @@ components:
           type: string
           description: BIC of the bank, if the IBAN is valid and the bank is known (from `IBANAPI_EXTENDED`, or for other validators from an earlier extended validation of the same IBAN)
           example: COBADEFFXXX
+        bankCode:
+          type: string
+          description: National bank code of the bank, if the IBAN is valid and known. For German IBANs this is the Bankleitzahl (BLZ).
+          example: "50040000"
         failureMessage:
           type: string
           description: Human-readable reason why the IBAN is invalid (wording depends on the validator). Absent if the IBAN is valid.

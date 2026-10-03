@@ -52,6 +52,7 @@ public class IbanController implements IbanApi {
                 .countryName(result.countryName())
                 .bankName(bank != null ? bank.bankName() : null)
                 .bic(bank != null ? bank.bic() : null)
+                .bankCode(bank != null ? bank.bankCode() : null)
                 .failureMessage(result.failureMessage());
         return ResponseEntity.ok(response);
     }

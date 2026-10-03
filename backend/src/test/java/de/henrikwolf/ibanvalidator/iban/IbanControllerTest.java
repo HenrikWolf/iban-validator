@@ -91,7 +91,8 @@ class IbanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.bankName").value("Commerzbank"))
-                .andExpect(jsonPath("$.bic").value("COBADEFFXXX"));
+                .andExpect(jsonPath("$.bic").value("COBADEFFXXX"))
+                .andExpect(jsonPath("$.bankCode").value("37040044"));
 
         verify(ibanApiValidator, never()).validate(anyString());
         verify(bankRepository).save(new Bank("COBADEFFXXX", "Commerzbank", "Germany", "37040044"));
